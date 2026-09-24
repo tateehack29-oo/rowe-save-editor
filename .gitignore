@@ -1,0 +1,9 @@
+node_modules/
+__pycache__/
+*.pyc
+*.gba
+*.sav
+*.srm
+.env
+.env.*
+.DS_Store
