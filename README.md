@@ -1,4 +1,4 @@
-# Pokémon R.O.W.E. Thai Save Editor — v0.7
+# Pokémon R.O.W.E. TATEEHACK Save Editor — v0.8
 
 โค้ดเว็บฉบับเต็มสำหรับ ROM ภาษาไทย TH Nonplae ที่ใช้พัฒนาโปรเจกต์นี้
 เป็นเว็บ static HTML/CSS/JavaScript ไม่ต้อง npm install หรือ build และประมวลผลเซฟในเบราว์เซอร์
@@ -79,3 +79,10 @@ https://github.com/PokeAPI/sprites
 
 Source snapshot: d1d25038db538fb65803fdfa4ef48ecf06e9f5f0
 โค้ดเว็บใน dist/ ตรงกับรุ่น 0.7 ที่เผยแพร่; ชุดส่งออกเพิ่มคู่มือและ workflow สำหรับ GitHub เท่านั้น
+
+
+## v0.8 — TATEEHACK and pocket editor
+
+Header/footer branding changed to TATEEHACK. ROM compatibility and original translation attribution are retained. Eight supported pockets show occupied and empty slots. Add or replace an item using the catalog for its pocket; edit quantity, stage, cancel or restore a slot. A visible substring search helps selection. New quantities are capped at 99; existing larger quantities can be preserved or reduced. Duplicate IDs in a changed pocket are refused. Empty gaps are compacted on export to match game bag ordering. TM/HM and key-item data are unchanged and unavailable for editing.
+
+`node tests/bag.test.mjs /path/to/matching-save.sav` checks all eight pockets, add/replace/quantity changes, compacting, XOR quantities, invalid data, duplicate IDs, no-op identity and exact unrelated-byte preservation. Core, fields and level regression tests passed. DOM tests cover pending edits blocking export, add/search/stage/cancel/reset and a full form export/readback. No new in-game playthrough is claimed.
