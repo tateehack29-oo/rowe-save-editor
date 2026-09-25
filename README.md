@@ -1,4 +1,4 @@
-# Pokémon R.O.W.E. TATEEHACK Save Editor — v0.8
+# Pokémon R.O.W.E. TATEEHACK Save Editor — v0.9
 
 โค้ดเว็บฉบับเต็มสำหรับ ROM ภาษาไทย TH Nonplae ที่ใช้พัฒนาโปรเจกต์นี้
 เป็นเว็บ static HTML/CSS/JavaScript ไม่ต้อง npm install หรือ build และประมวลผลเซฟในเบราว์เซอร์
@@ -86,3 +86,20 @@ Source snapshot: d1d25038db538fb65803fdfa4ef48ecf06e9f5f0
 Header/footer branding changed to TATEEHACK. ROM compatibility and original translation attribution are retained. Eight supported pockets show occupied and empty slots. Add or replace an item using the catalog for its pocket; edit quantity, stage, cancel or restore a slot. A visible substring search helps selection. New quantities are capped at 99; existing larger quantities can be preserved or reduced. Duplicate IDs in a changed pocket are refused. Empty gaps are compacted on export to match game bag ordering. TM/HM and key-item data are unchanged and unavailable for editing.
 
 `node tests/bag.test.mjs /path/to/matching-save.sav` checks all eight pockets, add/replace/quantity changes, compacting, XOR quantities, invalid data, duplicate IDs, no-op identity and exact unrelated-byte preservation. Core, fields and level regression tests passed. DOM tests cover pending edits blocking export, add/search/stage/cancel/reset and a full form export/readback. No new in-game playthrough is claimed.
+
+
+## v0.9 — storage operations and review
+
+- Move/swap Pokémon within and between Party and all 21 PC boxes. Party is compacted after removal.
+- Search the current save by nickname/species or Shiny and jump to its slot.
+- Clone to an empty slot; release requires an explicit checkbox. Clones retain all shared identity/OT data.
+- Shiny selector in the unified detail editor; standard-color preview sprites remain unchanged.
+- Chronological change summary, per-entry undo, and explicit download confirmation. History is in memory until reload. Independent entries can be undone; dependent entries must be undone in reverse order. Reset restores the originally opened bytes. Original backup download remains available.
+
+The matching ROM stores Shiny at byte 41 bit 7 of the packed Pokémon, verified with native GetMonData field 80 and IsMonShiny at 0x80a0dc0. Toggle preserves personality, gender, nature and other traits.
+
+PC-to-Party conversion rebuilds level, stats, full HP, zero status and byte 61 = 255. Existing moves start at **1 PP**; heal at a Pokémon Center to restore full PP. Native BoxToMon (0x809a4dc) comparison passed for Larvitar, Mega Venusaur, Hisuian Growlithe, Alolan Rattata and Shedinja, excluding the documented conservative PP values. Eggs and unsupported stat configurations cannot be withdrawn. Operations that would leave no conscious non-egg party member are refused.
+
+Validation: core, fields, level, bag and operations tests; native ROM conversion/Shiny checks; DOM integration for all five features, dependency rejection, independent undo, bag/player edits, template creation after moves, explicit export confirmation/readback and reset. This is programmatic validation, not a new in-game playthrough.
+
+Run `node tests/operations.test.mjs /path/to/matching-save.sav` with the original one-member Party fixture and empty PC test destinations. No ROM or user save is included.

@@ -39,7 +39,7 @@ export function mountBag(root,bytes,onChange){
     },'primary');save.id='bag-apply';
     const cancel=button('ยกเลิกค่าที่ยังไม่บันทึก',()=>{editing=false;render();status.textContent='ยกเลิกค่าที่ยังไม่บันทึกแล้ว';onChange()});cancel.id='bag-cancel';
     const undo=button('คืนค่าช่องนี้ตามเซฟต้นฉบับ',()=>{drafts.delete(key(active,selected));editing=false;render();status.textContent='คืนค่าช่องนี้แล้ว';onChange()});
-    panel.append(el('h3',pocket.name+' · ช่อง '+(selected+1)),label,search,matches,selectLabel,choice,quantityLabel,quantity,save,cancel,undo);
+    panel.append(el('h3',pocket.name+' · ช่อง '+(selected+1)),label,search,matches,selectLabel,choice,quantityLabel,quantity,save,cancel);
   }
   render();return {changes:()=>[...drafts.values()],pending:()=>editing};
 }

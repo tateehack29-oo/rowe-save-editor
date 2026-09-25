@@ -1,0 +1,23 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {operate,History,guardMon,fingerprint} from '../dist/operations.mjs';
+import {inspectRoster,editRoster} from '../dist/roster.mjs';
+import {parseSave,editSave,PROFILE} from '../dist/core.mjs';
+const file=process.argv[2];if(!file)throw Error('Provide matching save fixture');const original=new Uint8Array(fs.readFileSync(file)),r=inspectRoster(original),source=r.party[0],pc={destination:'pc',box:20,slot:29};assert(source&&!r.boxes[20][29]);
+assert.throws(()=>operate(original,{kind:'release',from:source}));
+if(r.count===1)assert.throws(()=>operate(original,{kind:'release',from:source,confirmed:true}));
+let bytes=operate(original,{kind:'clone',from:source,to:pc});assert.deepEqual(inspectRoster(bytes).boxes[20][29].raw,source.raw.slice(0,52));assert.deepEqual(inspectRoster(bytes).party[0].raw,source.raw);assert.throws(()=>operate(bytes,{kind:'clone',from:source,to:pc}));
+const dest={destination:'party',slot:r.count};bytes=operate(bytes,{kind:'move',from:pc,to:dest});let n=inspectRoster(bytes);assert.equal(n.count,r.count+1);assert.equal(n.boxes[20][29],null);assert.deepEqual(n.party[r.count].raw.slice(0,52),source.raw.slice(0,52));assert.equal(n.party[r.count].hp,n.party[r.count].stats[0]);assert.equal(n.party[r.count].raw[61],255);assert.deepEqual(n.party[r.count].raw.slice(52,56),new Uint8Array(source.moves.map(m=>m?1:0)));
+bytes=editRoster(bytes,[{...dest,key:n.party[r.count].key,nickname:'COPY',shiny:true}]);n=inspectRoster(bytes);assert.equal(n.party[r.count].shiny,true);assert.deepEqual(n.party[r.count].raw.slice(0,8),source.raw.slice(0,8));
+bytes=operate(bytes,{kind:'move',from:dest,to:{destination:'party',slot:0}});assert.equal(inspectRoster(bytes).party[0].nickname,'COPY');
+bytes=operate(bytes,{kind:'move',from:{destination:'party',slot:0},to:pc});assert.equal(inspectRoster(bytes).count,r.count);assert.equal(inspectRoster(bytes).boxes[20][29].nickname,'COPY');
+bytes=operate(bytes,{kind:'release',from:pc,confirmed:true});assert.deepEqual(bytes,original);
+const hist=new History(original),expected=fingerprint(source);hist.push('name',b=>editSave(b,{name:'TATEE'}));hist.push('clone',b=>{guardMon(b,source,expected);return operate(b,{kind:'clone',from:source,to:pc})});hist.undo(1);assert.equal(parseSave(hist.bytes).name,parseSave(original).name);assert(inspectRoster(hist.bytes).boxes[20][29]);const m=inspectRoster(hist.bytes).boxes[20][29];hist.push('edit clone',b=>{guardMon(b,pc,fingerprint(m));return editRoster(b,[{...pc,key:m.key,shiny:true}])});const old=hist.bytes.slice();assert.throws(()=>hist.undo(2));assert.deepEqual(hist.bytes,old);hist.undo(3);hist.undo(2);assert.deepEqual(hist.bytes,original);
+const shiny=editRoster(original,[{...source,shiny:!source.shiny}]),back=editRoster(shiny,[{...source,shiny:source.shiny}]);assert.deepEqual(back,original);const s=parseSave(original),allowed=new Set([s.world+0x238+41,s.world+0xff6,s.world+0xff7]);for(let i=0;i<original.length;i++)if(original[i]!==shiny[i])assert(allowed.has(i));
+console.log('PASS move/swap/clone/release, compaction, PC conversion, party guard, shiny exact byte, independent undo and dependent undo rejection');
+// Cross-box occupied swap and party/PC occupied swap keep all shared bytes.
+const p1={destination:'pc',box:0,slot:0},p2={destination:'pc',box:1,slot:29};
+let swaps=operate(original,{kind:'clone',from:source,to:p1});swaps=operate(swaps,{kind:'clone',from:source,to:p2});const a=inspectRoster(swaps).boxes[0][0];swaps=editRoster(swaps,[{...p1,key:a.key,nickname:'SWAP',shiny:true}]);swaps=operate(swaps,{kind:'move',from:p1,to:p2});assert.equal(inspectRoster(swaps).boxes[1][29].nickname,'SWAP');swaps=operate(swaps,{kind:'move',from:p2,to:source});assert.equal(inspectRoster(swaps).party[0].nickname,'SWAP');assert.deepEqual(inspectRoster(swaps).boxes[1][29].raw,source.raw.slice(0,52));
+const state=parseSave(swaps),base=parseSave(original);assert.deepEqual(swaps.slice(0,base.active.slot*14*4096),original.slice(0,base.active.slot*14*4096));assert.deepEqual(swaps.slice(28*4096),original.slice(28*4096));
+for(let i=0;i<original.length;i++){if(swaps[i]===original[i])continue;const inParty=i>=state.world+0x234&&i<state.world+0x400;const inPC=[5,6,7,8,9,10,11,12,13].some(id=>i>=state.active.sections.get(id)&&i<state.active.sections.get(id)+PROFILE.sizes[id]);const sum=[1,5,6,7,8,9,10,11,12,13].some(id=>i===state.active.sections.get(id)+0xff6||i===state.active.sections.get(id)+0xff7);assert(inParty||inPC||sum);}
+console.log('PASS cross-box and occupied Party/PC swaps; only allowed active payload/checksum bytes changed');
